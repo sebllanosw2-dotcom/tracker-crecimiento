@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tracker de Crecimiento · David S. Llanos</title>
+<meta name="theme-color" content="#2f6fd6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#f5f7fa; --surface:#fff; --fg:#17202b; --muted:#5b6878; --line:#e1e6ee; --accent:#2f6fd6; --accent-fg:#fff;
+  --ok:#178a5a; --ok-bg:#d7f2e5; --mid:#a87a00; --mid-bg:#fbefc8; --no:#d23b3b; --no-bg:#fbdede;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f141b; --surface:#161d27; --fg:#e7ecf3; --muted:#9aa7b8; --line:#273242; --accent:#7fb0ff; --accent-fg:#0f141b;
+  --ok:#5fd6a0; --ok-bg:#163d2d; --mid:#f2c94c; --mid-bg:#40351a; --no:#ff8a8a; --no-bg:#4a2020; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#app{display:flex;flex-direction:column;gap:18px}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 var(--f-body);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font:800 26px/1.1 var(--f-display);margin:0}
+h2{font:800 18px/1.2 var(--f-display);margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.link{border:0;background:none;color:var(--accent);padding:4px 0;font-weight:500}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:70px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1;min-width:120px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-radius:10px}
+.day .dn{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.day .num{font:800 20px/1 var(--f-display)}
+.day .pct{font:500 10.5px var(--f-mono);color:var(--muted)}
+.day[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.day[aria-pressed="true"] .dn,.day[aria-pressed="true"] .pct{color:var(--accent-fg)}
+
+.progress{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--ok);transition:width .3s}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{display:flex;flex-direction:column}
+.kpi b{font:800 24px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+
+.task{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0;padding-top:0}
+.task-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.bar{width:4px;align-self:stretch;border-radius:4px;background:var(--c)}
+.task-title{font-weight:600;min-width:0}
+.task-time{font:500 12px var(--f-mono);color:var(--muted)}
+.chip{font-size:11.5px;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--fg);white-space:nowrap}
+.states{display:flex;gap:6px;flex-wrap:wrap;padding-left:14px}
+.st{font-size:13px;padding:5px 10px}
+.st[data-v="hecha"][aria-pressed="true"]{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:600}
+.st[data-v="parcial"][aria-pressed="true"]{background:var(--mid-bg);border-color:var(--mid);color:var(--mid);font-weight:600}
+.st[data-v="no_hecha"][aria-pressed="true"]{background:var(--no-bg);border-color:var(--no);color:var(--no);font-weight:600}
+.ev-list{padding-left:14px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ev-item{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.ev-item .tag{font:500 11px var(--f-mono);color:var(--ok)}
+.ev-form{padding-left:14px}
+
+.note{border-left:3px solid var(--line);padding:4px 10px;font-size:14px}
+.note .meta{font:500 11px var(--f-mono);color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:14px;z-index:20}
+.empty{color:var(--muted);text-align:center;padding:18px 0}
+details summary{cursor:pointer;font-weight:600}
+@media (prefers-reduced-motion:reduce){.progress span{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row between">
+    <div>
+      <div class="muted small">Tracker de crecimiento</div>
+      <h1 id="title">Hoy</h1>
+    </div>
+    <button class="link" id="logout" hidden>Cerrar sesión</button>
+  </header>
+
+  <!-- LOGIN -->
+  <section class="card" id="auth" hidden>
+    <h2>Inicia sesión</h2>
+    <p class="muted small" style="margin:0">Solo tu cuenta puede ver y editar estos datos.</p>
+    <form id="authForm" class="grid2">
+      <label>Correo<input id="email" type="email" autocomplete="email" required value="david@importslab.com"></label>
+      <label>Contraseña<input id="password" type="password" autocomplete="current-password" required minlength="8"></label>
+      <div class="row">
+        <button class="primary" type="submit">Entrar</button>
+        <button type="button" id="signup">Crear cuenta</button>
+      </div>
+    </form>
+    <p id="authMsg" class="small muted" style="margin:0"></p>
+  </section>
+
+  <!-- APP -->
+  <main id="app" hidden>
+    <section class="card">
+      <div class="row between">
+        <button id="prevWeek" aria-label="Semana anterior">‹</button>
+        <strong id="weekLabel"></strong>
+        <button id="nextWeek" aria-label="Semana siguiente">›</button>
+      </div>
+      <div class="days" id="days"></div>
+    </section>
+
+    <section class="card">
+      <div class="kpis">
+        <div class="kpi"><span class="muted small">Cumplimiento</span><b id="kPct">0%</b></div>
+        <div class="kpi"><span class="muted small">Tareas hechas</span><b id="kDone">0/0</b></div>
+        <div class="kpi"><span class="muted small">Evidencias</span><b id="kEv">0</b></div>
+      </div>
+      <div class="progress" aria-hidden="true"><span id="bar" style="width:0"></span></div>
+    </section>
+
+    <section class="card">
+      <h2>Tareas del día</h2>
+      <div id="tasks"></div>
+    </section>
+
+    <section class="card">
+      <h2>Nota del día</h2>
+      <p class="muted small" style="margin:0">Escribe como hablas: imprevistos, logros, cómo te sentiste. La IA lo clasificará en la fase 2.</p>
+      <form id="noteForm" class="row" style="align-items:stretch;flex-direction:column">
+        <textarea id="noteText" required placeholder="Ej.: Hoy no pude ir al gym porque me extendieron el turno."></textarea>
+        <div class="row">
+          <label style="flex:2">Relacionada con (opcional)<select id="noteTask"><option value="">Ninguna tarea en particular</option></select></label>
+          <button class="primary" type="submit" style="align-self:flex-end">Guardar nota</button>
+        </div>
+      </form>
+      <div id="notes" class="row" style="flex-direction:column;align-items:stretch;gap:8px"></div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>Agregar tarea</summary>
+        <form id="addForm" class="grid2" style="margin-top:12px">
+          <label>Fecha<input id="aFecha" type="date" required></label>
+          <label>Categoría<select id="aCat" required></select></label>
+          <label>Inicio<input id="aIni" type="time" required></label>
+          <label>Fin<input id="aFin" type="time" required></label>
+          <label style="grid-column:1/-1">Título<input id="aTit" required placeholder="Ej.: Turno Pizza Hut"></label>
+          <div><button class="primary" type="submit">Agregar</button></div>
+        </form>
+      </details>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SB_URL="https://jnqetvnujajcsgigqhey.supabase.co";
+const SB_KEY="sb_publishable_vDfxHiX-SqCdaeXoG69U3w_ya2PfDAm";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const toast=m=>{const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)};
+const bogotaToday=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Bogota"}).format(new Date());
+const addDays=(iso,n)=>{const d=new Date(iso+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const mondayOf=iso=>{const d=new Date(iso+"T12:00:00Z");const w=(d.getUTCDay()+6)%7;return addDays(iso,-w)};
+const DN=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const fmtT=t=>{let[h,m]=t.split(":").map(Number);const ap=h>=12?"pm":"am";h=h%12||12;return h+(m?":"+String(m).padStart(2,"0"):"")+" "+ap};
+const longDate=iso=>{const d=new Date(iso+"T12:00:00Z");return ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][d.getUTCDay()]+" "+d.getUTCDate()+" de "+MES[d.getUTCMonth()]};
+
+let CATS={}, sel=bogotaToday(), week=mondayOf(sel), weekTasks=[], openEv=null;
+
+async function loadCats(){
+  const {data,error}=await sb.from("categorias").select("*");
+  if(error) throw error;
+  CATS=Object.fromEntries(data.map(c=>[c.codigo,c]));
+  $("aCat").innerHTML=data.map(c=>`<option value="${c.codigo}">${esc(c.nombre)}</option>`).join("");
+}
+
+async function loadWeek(){
+  const end=addDays(week,6);
+  const {data,error}=await sb.from("tareas")
+    .select("id,fecha,hora_inicio,hora_fin,categoria,titulo,registros(estado),evidencias(id,tipo,descripcion,url,puntaje)")
+    .gte("fecha",week).lte("fecha",end).order("fecha").order("hora_inicio");
+  if(error){toast("No se pudieron cargar las tareas");console.error(error);return}
+  weekTasks=data.map(t=>({...t,estado:(Array.isArray(t.registros)?t.registros[0]:t.registros)?.estado||null}));
+  renderWeek();renderDay();loadNotes();
+}
+
+function pct(list){if(!list.length)return null;const s=list.reduce((a,t)=>a+(t.estado==="hecha"?1:t.estado==="parcial"?.5:0),0);return Math.round(s/list.length*100)}
+
+function renderWeek(){
+  const s=new Date(week+"T12:00:00Z"),e=new Date(addDays(week,6)+"T12:00:00Z");
+  $("weekLabel").textContent=`${s.getUTCDate()} ${MES[s.getUTCMonth()]} – ${e.getUTCDate()} ${MES[e.getUTCMonth()]}`;
+  $("days").innerHTML=DN.map((n,i)=>{const iso=addDays(week,i);const p=pct(weekTasks.filter(t=>t.fecha===iso));
+    return `<button class="day" data-d="${iso}" aria-pressed="${iso===sel}"><span class="dn">${n}</span><span class="num">${+iso.slice(8)}</span><span class="pct">${p==null?"–":p+"%"}</span></button>`}).join("");
+}
+
+function renderDay(){
+  $("title").textContent=sel===bogotaToday()?"Hoy · "+longDate(sel):longDate(sel);
+  const list=weekTasks.filter(t=>t.fecha===sel);
+  const p=pct(list)??0, done=list.filter(t=>t.estado==="hecha").length, ev=list.reduce((a,t)=>a+t.evidencias.length,0);
+  $("kPct").textContent=p+"%";$("kDone").textContent=`${done}/${list.length}`;$("kEv").textContent=ev;$("bar").style.width=p+"%";
+  $("noteTask").innerHTML=`<option value="">Ninguna tarea en particular</option>`+list.map(t=>`<option value="${t.id}">${fmtT(t.hora_inicio)} · ${esc(t.titulo)}</option>`).join("");
+  $("aFecha").value=sel;
+  if(!list.length){$("tasks").innerHTML=`<p class="empty">No hay tareas para este día. Agrégalas abajo.</p>`;return}
+  $("tasks").innerHTML=list.map(t=>{const c=CATS[t.categoria]||{nombre:t.categoria,color:"#888"};
+    return `<div class="task" style="--c:${c.color}">
+      <div class="task-head"><span class="bar"></span>
+        <div style="min-width:0"><div class="task-title">${esc(t.titulo)}</div><div class="task-time">${fmtT(t.hora_inicio)} – ${fmtT(t.hora_fin)}</div></div>
+        <span class="chip">${esc(c.nombre)}</span></div>
+      <div class="states">
+        ${[["hecha","Hecha"],["parcial","Parcial"],["no_hecha","No la hice"]].map(([v,l])=>`<button class="st" data-t="${t.id}" data-v="${v}" aria-pressed="${t.estado===v}">${l}</button>`).join("")}
+        <button class="link small" data-evopen="${t.id}">+ Evidencia</button>
+      </div>
+      ${t.evidencias.length?`<div class="ev-list">${t.evidencias.map(e=>`<div class="ev-item"><span class="tag">${esc(e.tipo)}${e.puntaje!=null?" · "+e.puntaje+"%":""}</span><span>${esc(e.descripcion)}</span>${e.url?`<a href="${esc(e.url)}" target="_blank" rel="noopener">ver</a>`:""}</div>`).join("")}</div>`:""}
+      ${openEv===t.id?`<form class="ev-form grid2" data-evform="${t.id}">
+        <label>Tipo<select name="tipo"><option value="ejercicio">Ejercicio resuelto</option><option value="puntaje">Puntaje / quiz</option><option value="link">Link</option><option value="entregable">Entregable</option><option value="otro">Otro</option></select></label>
+        <label>Puntaje % (opcional)<input name="puntaje" type="number" min="0" max="100" step="1"></label>
+        <label style="grid-column:1/-1">¿Qué lograste?<input name="descripcion" required placeholder="Ej.: Kaggle Intro to SQL, lección 2: SELECT, FROM & WHERE"></label>
+        <label style="grid-column:1/-1">Link (opcional)<input name="url" type="url" placeholder="https://"></label>
+        <div class="row"><button class="primary" type="submit">Guardar evidencia</button><button type="button" data-evclose>Cancelar</button></div>
+      </form>`:""}
+    </div>`}).join("");
+}
+
+async function loadNotes(){
+  const {data,error}=await sb.from("notas").select("id,texto,creado_en,tarea_id").eq("fecha",sel).order("creado_en",{ascending:false});
+  if(error){console.error(error);return}
+  $("notes").innerHTML=data.length?data.map(n=>{const t=weekTasks.find(x=>x.id===n.tarea_id);
+    return `<div class="note"><div class="meta">${new Date(n.creado_en).toLocaleTimeString("es-CO",{timeZone:"America/Bogota",hour:"numeric",minute:"2-digit"})}${t?" · "+esc(t.titulo):""}</div>${esc(n.texto)}</div>`}).join(""):`<p class="muted small" style="margin:0">Aún no hay notas para este día.</p>`;
+}
+
+document.addEventListener("click",async e=>{
+  const d=e.target.closest("[data-d]");
+  if(d){sel=d.dataset.d;openEv=null;renderWeek();renderDay();loadNotes();return}
+  const st=e.target.closest(".st");
+  if(st){const id=+st.dataset.t,v=st.dataset.v,t=weekTasks.find(x=>x.id===id);
+    if(t.estado===v){const {error}=await sb.from("registros").delete().eq("tarea_id",id);if(error)return toast("No se pudo guardar");t.estado=null}
+    else{const {error}=await sb.from("registros").upsert({tarea_id:id,estado:v,actualizado_en:new Date().toISOString()},{onConflict:"tarea_id"});if(error){console.error(error);return toast("No se pudo guardar")}t.estado=v}
+    renderWeek();renderDay();return}
+  const eo=e.target.closest("[data-evopen]");
+  if(eo){openEv=+eo.dataset.evopen;renderDay();return}
+  if(e.target.closest("[data-evclose]")){openEv=null;renderDay();return}
+});
+
+document.addEventListener("submit",async e=>{
+  const f=e.target.closest("[data-evform]");
+  if(!f)return;
+  e.preventDefault();
+  const fd=new FormData(f),id=+f.dataset.evform;
+  const row={tarea_id:id,tipo:fd.get("tipo"),descripcion:fd.get("descripcion").trim(),url:fd.get("url")||null,puntaje:fd.get("puntaje")===""?null:+fd.get("puntaje")};
+  const {data,error}=await sb.from("evidencias").insert(row).select("id,tipo,descripcion,url,puntaje").single();
+  if(error){console.error(error);return toast("No se pudo guardar la evidencia")}
+  weekTasks.find(x=>x.id===id).evidencias.push(data);openEv=null;renderDay();toast("Evidencia guardada");
+});
+
+$("noteForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const texto=$("noteText").value.trim();if(!texto)return;
+  const {error}=await sb.from("notas").insert({fecha:sel,texto,tarea_id:$("noteTask").value?+$("noteTask").value:null});
+  if(error){console.error(error);return toast("No se pudo guardar la nota")}
+  $("noteText").value="";toast("Nota guardada");loadNotes();
+});
+
+$("addForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const row={fecha:$("aFecha").value,hora_inicio:$("aIni").value,hora_fin:$("aFin").value,categoria:$("aCat").value,titulo:$("aTit").value.trim()};
+  if(row.hora_fin<=row.hora_inicio)return toast("La hora de fin debe ser después del inicio");
+  const {error}=await sb.from("tareas").insert(row);
+  if(error){console.error(error);return toast("No se pudo agregar la tarea")}
+  $("aTit").value="";toast("Tarea agregada");
+  sel=row.fecha;week=mondayOf(sel);loadWeek();
+});
+
+$("prevWeek").onclick=()=>{week=addDays(week,-7);sel=week;loadWeek()};
+$("nextWeek").onclick=()=>{week=addDays(week,7);sel=week;loadWeek()};
+
+// AUTH
+$("authForm").addEventListener("submit",async e=>{
+  e.preventDefault();$("authMsg").textContent="Entrando…";
+  const {error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+  $("authMsg").textContent=error?(error.message.includes("confirm")?"Tu correo aún no está confirmado.":"Correo o contraseña incorrectos."):"";
+});
+$("signup").onclick=async()=>{
+  const email=$("email").value.trim(),password=$("password").value;
+  if(password.length<8){$("authMsg").textContent="La contraseña debe tener al menos 8 caracteres.";return}
+  const {error}=await sb.auth.signUp({email,password});
+  $("authMsg").textContent=error?error.message:"Cuenta creada. Avísale a Claude para activarla, o confirma desde tu correo.";
+};
+$("logout").onclick=()=>sb.auth.signOut();
+
+async function show(session){
+  const logged=!!session;
+  $("auth").hidden=logged;$("app").hidden=!logged;$("logout").hidden=!logged;
+  if(!logged){$("title").textContent="Bienvenido";return}
+  try{await loadCats();await loadWeek()}catch(err){console.error(err);toast("No se pudieron cargar los datos")}
+}
+sb.auth.onAuthStateChange((_ev,session)=>{if(_ev==="INITIAL_SESSION"||_ev==="SIGNED_IN"||_ev==="SIGNED_OUT")show(session)});
+</script>
+</body>
+</html>
